@@ -1,6 +1,7 @@
 let scanner = new Instascan.Scanner({ video: document.getElementById('preview'), mirror: false });
 let cameras = [];
 let currentCam = 0;
+const infoBox = document.getElementById('infoBox');
 
 scanner.addListener('scan', function (content) {
   const now = new Date();
@@ -13,17 +14,23 @@ scanner.addListener('scan', function (content) {
   records.push(record);
   localStorage.setItem('attendance', JSON.stringify(records));
 
-  // beep sound
+  // beep and notify
   document.getElementById('beep').play();
-
-  // notification
   showNotification("Attendance Recorded Successfully");
+
+  // update display with fade
+  infoBox.classList.add('fade');
+  setTimeout(() => {
+    document.getElementById('scannedName').textContent = record.name;
+    document.getElementById('scannedDate').textContent = record.date;
+    document.getElementById('scannedTime').textContent = record.time;
+    infoBox.classList.remove('fade');
+  }, 300);
 });
 
 Instascan.Camera.getCameras().then(function (cams) {
   cameras = cams;
   if (cameras.length > 0) {
-    // Prefer back camera if available
     let backCam = cameras.find(c => c.name.toLowerCase().includes('back')) || cameras[0];
     scanner.start(backCam);
   } else {
