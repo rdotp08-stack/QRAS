@@ -12,11 +12,35 @@ h2 {
   margin-bottom: 10px;
 }
 
+.scanner-area {
+  position: relative;
+  display: inline-block;
+}
+
 video {
   width: 90%;
   max-width: 500px;
   border: 3px solid #ffcc00;
   border-radius: 10px;
+}
+
+.scan-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 250px;
+  height: 250px;
+  border: 3px solid #28a745;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  animation: pulse 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 10px rgba(40,167,69,0.7); }
+  50% { box-shadow: 0 0 25px rgba(40,167,69,1); }
+  100% { box-shadow: 0 0 10px rgba(40,167,69,0.7); }
 }
 
 .buttons {
@@ -47,21 +71,4 @@ button:hover, .btn-link:hover {
   padding: 12px 18px;
   border-radius: 5px;
   display: none;
-}
-
-table {
-  margin: 20px auto;
-  border-collapse: collapse;
-  width: 90%;
-  max-width: 600px;
-}
-
-th, td {
-  border: 1px solid #003366;
-  padding: 8px;
-}
-
-th {
-  background: #ffcc00;
-  color: #003366;
 }
