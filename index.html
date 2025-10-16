@@ -62,6 +62,7 @@
       justify-content: center;
       text-align: left;
       min-width: 250px;
+      transition: opacity 1s ease;
     }
 
     .info h2 {
@@ -75,8 +76,14 @@
       margin: 5px 0;
     }
 
+    .buttons-bottom {
+      margin-top: 50px;
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+    }
+
     button {
-      margin: 10px;
       padding: 10px 18px;
       font-size: 16px;
       border: none;
@@ -91,13 +98,6 @@
       background-color: #1565c0;
     }
 
-    .buttons-bottom {
-      margin-top: 25px;
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-    }
-
     .notification {
       position: fixed;
       top: 20px;
@@ -110,6 +110,13 @@
       display: none;
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
+
+    #cooldown {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #d32f2f;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -119,15 +126,15 @@
       <div class="scan-area"></div>
     </div>
 
-    <div class="info">
+    <div class="info" id="infoBox">
       <h2>Attendance</h2>
       <p><strong>Name:</strong> <span id="name">-</span></p>
       <p><strong>Date:</strong> <span id="date">-</span></p>
       <p><strong>Time:</strong> <span id="time">-</span></p>
+      <div id="cooldown"></div>
     </div>
   </div>
 
-  <!-- Buttons moved here -->
   <div class="buttons-bottom">
     <button id="viewLogs">View Logs</button>
     <button id="downloadLogs">Download Logs</button>
@@ -140,12 +147,22 @@
     const dateDisplay = document.getElementById('date');
     const timeDisplay = document.getElementById('time');
     const notif = document.getElementById('notification');
+    const cooldownDisplay = document.getElementById('cooldown');
+    const infoBox = document.getElementById('infoBox');
 
+    let isCooldown = false;
+    let cooldownTime = 0;
+    let scanDisplayTimeout = null;
+    let showDateTimeInterval = null;
+    let showingDateTime = true;
+
+    // Show temporary notification
     function showNotification() {
       notif.style.display = 'block';
       setTimeout(() => notif.style.display = 'none', 2500);
     }
 
+    // Get current date and time
     function getCurrentDateTime() {
       const now = new Date();
       return {
@@ -154,6 +171,46 @@
       };
     }
 
+    // Update real-time clock
+    function updateLiveClock() {
+      const { date, time } = getCurrentDateTime();
+      dateDisplay.textContent = date;
+      timeDisplay.textContent = time;
+    }
+
+    // Start showing live clock
+    function startLiveClock() {
+      showingDateTime = true;
+      nameDisplay.textContent = "-";
+      infoBox.style.opacity = 1;
+      updateLiveClock();
+      showDateTimeInterval = setInterval(updateLiveClock, 1000);
+    }
+
+    // Stop live clock
+    function stopLiveClock() {
+      showingDateTime = false;
+      clearInterval(showDateTimeInterval);
+    }
+
+    // Start cooldown timer
+    function startCooldown() {
+      isCooldown = true;
+      cooldownTime = 3;
+      cooldownDisplay.textContent = `Cooldown: ${cooldownTime}s`;
+      const cooldownInterval = setInterval(() => {
+        cooldownTime--;
+        if (cooldownTime > 0) {
+          cooldownDisplay.textContent = `Cooldown: ${cooldownTime}s`;
+        } else {
+          cooldownDisplay.textContent = "";
+          isCooldown = false;
+          clearInterval(cooldownInterval);
+        }
+      }, 1000);
+    }
+
+    // Save attendance and display scanned data
     function saveAttendance(name) {
       const { date, time } = getCurrentDateTime();
       const record = { name, date, time };
@@ -161,15 +218,35 @@
       logs.push(record);
       localStorage.setItem('attendanceLogs', JSON.stringify(logs));
 
+      stopLiveClock();
       nameDisplay.textContent = name;
       dateDisplay.textContent = date;
       timeDisplay.textContent = time;
 
+      infoBox.style.opacity = 1;
       showNotification();
       new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+
+      // Reset fade timer
+      if (scanDisplayTimeout) clearTimeout(scanDisplayTimeout);
+      scanDisplayTimeout = setTimeout(() => {
+        fadeToDateTime();
+      }, 5000);
     }
 
+    // Fade back to date/time
+    function fadeToDateTime() {
+      infoBox.style.opacity = 0;
+      setTimeout(() => {
+        startLiveClock();
+        infoBox.style.opacity = 1;
+      }, 1000);
+    }
+
+    // Initialize QR Code Scanner
     window.addEventListener("load", function() {
+      startLiveClock();
+
       const html5QrCode = new Html5Qrcode("reader");
       Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length) {
@@ -178,13 +255,17 @@
             camera.id,
             { fps: 10, qrbox: { width: 300, height: 300 } },
             qrMessage => {
-              saveAttendance(qrMessage);
+              if (!isCooldown) {
+                saveAttendance(qrMessage);
+                startCooldown();
+              }
             }
           );
         }
       }).catch(err => console.error("Camera error:", err));
     });
 
+    // View Logs
     document.getElementById('viewLogs').addEventListener('click', () => {
       const logs = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
       if (logs.length === 0) {
@@ -195,6 +276,7 @@
       alert("Attendance Logs:\n\n" + logText);
     });
 
+    // Download Logs
     document.getElementById('downloadLogs').addEventListener('click', () => {
       const logs = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
       if (logs.length === 0) {
