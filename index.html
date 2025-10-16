@@ -9,19 +9,31 @@
 <body>
   <h2>GALAXIA Attendance Scanner</h2>
 
-  <div class="scanner-area">
-    <video id="preview" playsinline></video>
-    <div class="scan-box"></div>
-  </div>
+  <div class="main-container">
+    <!-- Left: Scanner -->
+    <div class="scanner-area">
+      <video id="preview" playsinline></video>
+      <div class="scan-box"></div>
+      <div class="buttons">
+        <button id="switchCamera">Switch Camera</button>
+        <a href="attendance.html" class="btn-link">View Attendance</a>
+      </div>
+    </div>
 
-  <div class="buttons">
-    <button id="switchCamera">Switch Camera</button>
-    <a href="attendance.html" class="btn-link">View Attendance</a>
+    <!-- Right: Info -->
+    <div class="info-display" id="infoBox">
+      <h3>Last Scan</h3>
+      <div class="info-box">
+        <p><strong>Name:</strong> <span id="scannedName">—</span></p>
+        <p><strong>Date:</strong> <span id="scannedDate">—</span></p>
+        <p><strong>Time:</strong> <span id="scannedTime">—</span></p>
+      </div>
+    </div>
   </div>
 
   <div id="notification"></div>
 
-  <!-- beep sound -->
+  <!-- Google Beep -->
   <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script src="instascan.min.js"></script>
