@@ -1,25 +1,32 @@
 body {
   font-family: Arial, sans-serif;
-  text-align: center;
   background: #ffffff;
   color: #003366;
   margin: 0;
   padding: 20px;
+  text-align: center;
 }
 
 h2 {
   color: #003366;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.main-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 30px;
 }
 
 .scanner-area {
   position: relative;
-  display: inline-block;
+  width: 400px;
 }
 
 video {
-  width: 90%;
-  max-width: 500px;
+  width: 100%;
   border: 3px solid #ffcc00;
   border-radius: 10px;
 }
@@ -28,8 +35,8 @@ video {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 250px;
-  height: 250px;
+  width: 200px;
+  height: 200px;
   border: 3px solid #28a745;
   transform: translate(-50%, -50%);
   border-radius: 10px;
@@ -41,6 +48,31 @@ video {
   0% { box-shadow: 0 0 10px rgba(40,167,69,0.7); }
   50% { box-shadow: 0 0 25px rgba(40,167,69,1); }
   100% { box-shadow: 0 0 10px rgba(40,167,69,0.7); }
+}
+
+.info-display {
+  background: #f4f8ff;
+  border: 2px solid #003366;
+  border-radius: 10px;
+  padding: 25px;
+  width: 350px;
+  text-align: left;
+  opacity: 1;
+  transition: opacity 0.6s ease-in-out;
+}
+
+.info-display.fade {
+  opacity: 0.2;
+}
+
+.info-display h3 {
+  text-align: center;
+  color: #003366;
+}
+
+.info-box p {
+  font-size: 20px;
+  margin: 15px 0;
 }
 
 .buttons {
