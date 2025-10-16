@@ -1,296 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attendance QR Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Attendance System</title>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background-color: #ffffff;
-      color: #0d47a1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+      background-color: #121212;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
       height: 100vh;
-    }
-
-    .container {
-      display: flex;
-      flex-direction: row;
-      gap: 20px;
-      align-items: center;
-      background: #f9f9f9;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    #reader {
-      position: relative;
-      width: 420px;
-      height: 420px;
-      border: 4px solid #fdd835;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    #reader video {
-      object-fit: cover;
-      width: 100%;
-      height: 100%;
-    }
-
-    .scan-area {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 70%;
-      height: 70%;
-      border: 3px solid #00c853;
-      transform: translate(-50%, -50%);
-      border-radius: 10px;
-      pointer-events: none;
-    }
-
-    .info {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      text-align: left;
-      min-width: 250px;
-      transition: opacity 1s ease;
+      align-items: center;
     }
 
-    .info h2 {
-      font-size: 28px;
+    h1 {
       margin-bottom: 10px;
-      color: #0d47a1;
     }
 
-    .info p {
+    video {
+      border: 3px solid #0ff;
+      border-radius: 10px;
+      width: 320px;
+      height: 240px;
+    }
+
+    #output {
+      margin-top: 20px;
       font-size: 20px;
-      margin: 5px 0;
-    }
-
-    .buttons-bottom {
-      margin-top: 50px;
-      display: flex;
-      justify-content: center;
-      gap: 25px;
-    }
-
-    button {
-      padding: 10px 18px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background-color: #0d47a1;
-      color: white;
-      transition: 0.2s;
-    }
-
-    button:hover {
-      background-color: #1565c0;
-    }
-
-    .notification {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background-color: #00c853;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: bold;
-      display: none;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      transition: opacity 1s ease;
     }
 
     #cooldown {
       margin-top: 10px;
-      font-weight: bold;
-      color: #d32f2f;
-      text-align: center;
+      font-size: 16px;
+      color: #0ff;
+    }
+
+    #datetime {
+      font-size: 20px;
+      margin-top: 15px;
+    }
+
+    .buttons {
+      position: absolute;
+      bottom: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    button {
+      background-color: #0ff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      color: #000;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #00bcd4;
     }
   </style>
 </head>
 <body>
+  <h1>QR Attendance System</h1>
+  <video id="preview"></video>
 
-  <div class="container">
-    <div id="reader">
-      <div class="scan-area"></div>
-    </div>
+  <div id="output">Initializing...</div>
+  <div id="cooldown"></div>
+  <div id="datetime"></div>
 
-    <div class="info" id="infoBox">
-      <h2>Attendance</h2>
-      <p><strong>Name:</strong> <span id="name">-</span></p>
-      <p><strong>Date:</strong> <span id="date">-</span></p>
-      <p><strong>Time:</strong> <span id="time">-</span></p>
-      <div id="cooldown"></div>
-    </div>
-  </div>
-
-  <div class="buttons-bottom">
+  <div class="buttons">
     <button id="viewLogs">View Logs</button>
     <button id="downloadLogs">Download Logs</button>
+    <button id="clearLogs">Clear Logs</button>
   </div>
 
-  <div class="notification" id="notification">Attendance Recorded</div>
-
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    const nameDisplay = document.getElementById('name');
-    const dateDisplay = document.getElementById('date');
-    const timeDisplay = document.getElementById('time');
-    const notif = document.getElementById('notification');
-    const cooldownDisplay = document.getElementById('cooldown');
-    const infoBox = document.getElementById('infoBox');
+    const output = document.getElementById("output");
+    const cooldownDisplay = document.getElementById("cooldown");
+    const dateTimeDisplay = document.getElementById("datetime");
 
-    let isCooldown = false;
-    let cooldownTime = 0;
-    let scanDisplayTimeout = null;
-    let showDateTimeInterval = null;
-    let showingDateTime = true;
+    let lastScanTime = 0;
+    let cooldown = false;
+    let fadeTimeout = null;
+    let showTime = true;
 
-    // Show temporary notification
-    function showNotification() {
-      notif.style.display = 'block';
-      setTimeout(() => notif.style.display = 'none', 2500);
-    }
-
-    // Get current date and time
-    function getCurrentDateTime() {
+    // Show date and time continuously when idle
+    function updateDateTime() {
       const now = new Date();
-      return {
-        date: now.toLocaleDateString(),
-        time: now.toLocaleTimeString()
-      };
+      const formatted = now.toLocaleString();
+      if (showTime) dateTimeDisplay.textContent = formatted;
     }
+    setInterval(updateDateTime, 1000);
 
-    // Update real-time clock
-    function updateLiveClock() {
-      const { date, time } = getCurrentDateTime();
-      dateDisplay.textContent = date;
-      timeDisplay.textContent = time;
-    }
-
-    // Start showing live clock
-    function startLiveClock() {
-      showingDateTime = true;
-      nameDisplay.textContent = "-";
-      infoBox.style.opacity = 1;
-      updateLiveClock();
-      showDateTimeInterval = setInterval(updateLiveClock, 1000);
-    }
-
-    // Stop live clock
-    function stopLiveClock() {
-      showingDateTime = false;
-      clearInterval(showDateTimeInterval);
-    }
-
-    // Start cooldown timer
+    // Handle cooldown countdown
     function startCooldown() {
-      isCooldown = true;
-      cooldownTime = 3;
-      cooldownDisplay.textContent = `Cooldown: ${cooldownTime}s`;
-      const cooldownInterval = setInterval(() => {
-        cooldownTime--;
-        if (cooldownTime > 0) {
-          cooldownDisplay.textContent = `Cooldown: ${cooldownTime}s`;
-        } else {
-          cooldownDisplay.textContent = "";
-          isCooldown = false;
-          clearInterval(cooldownInterval);
+      cooldown = true;
+      let timeLeft = 3;
+      cooldownDisplay.textContent = `Cooldown: ${timeLeft}s`;
+      const timer = setInterval(() => {
+        timeLeft--;
+        cooldownDisplay.textContent = timeLeft > 0 ? `Cooldown: ${timeLeft}s` : "";
+        if (timeLeft <= 0) {
+          cooldown = false;
+          clearInterval(timer);
         }
       }, 1000);
     }
 
-    // Save attendance and display scanned data
-    function saveAttendance(name) {
-      const { date, time } = getCurrentDateTime();
-      const record = { name, date, time };
-      let logs = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
-      logs.push(record);
-      localStorage.setItem('attendanceLogs', JSON.stringify(logs));
-
-      stopLiveClock();
-      nameDisplay.textContent = name;
-      dateDisplay.textContent = date;
-      timeDisplay.textContent = time;
-
-      infoBox.style.opacity = 1;
-      showNotification();
-      new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
-
-      // Reset fade timer
-      if (scanDisplayTimeout) clearTimeout(scanDisplayTimeout);
-      scanDisplayTimeout = setTimeout(() => {
-        fadeToDateTime();
+    // Show scanned result for 5 seconds, then fade back to date/time
+    function showScannedData(data) {
+      clearTimeout(fadeTimeout);
+      showTime = false;
+      output.style.opacity = 1;
+      output.textContent = "Last Scanned: " + data;
+      fadeTimeout = setTimeout(() => {
+        fadeBackToTime();
       }, 5000);
     }
 
-    // Fade back to date/time
-    function fadeToDateTime() {
-      infoBox.style.opacity = 0;
-      setTimeout(() => {
-        startLiveClock();
-        infoBox.style.opacity = 1;
-      }, 1000);
+    function fadeBackToTime() {
+      let opacity = 1;
+      const fade = setInterval(() => {
+        opacity -= 0.05;
+        output.style.opacity = opacity;
+        if (opacity <= 0) {
+          clearInterval(fade);
+          showTime = true;
+          output.textContent = "";
+          output.style.opacity = 1;
+        }
+      }, 100);
     }
 
-    // Initialize QR Code Scanner
-    window.addEventListener("load", function() {
-      startLiveClock();
+    // Initialize QR scanner
+    const html5QrCode = new Html5Qrcode("preview");
+    const qrConfig = { fps: 10, qrbox: 250 };
 
-      const html5QrCode = new Html5Qrcode("reader");
-      Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length) {
-          const camera = devices.find(cam => cam.label.toLowerCase().includes("back")) || devices[0];
-          html5QrCode.start(
-            camera.id,
-            { fps: 10, qrbox: { width: 300, height: 300 } },
-            qrMessage => {
-              if (!isCooldown) {
-                saveAttendance(qrMessage);
-                startCooldown();
-              }
-            }
-          );
+    html5QrCode.start(
+      { facingMode: "environment" },
+      qrConfig,
+      (decodedText) => {
+        const now = Date.now();
+        if (!cooldown) {
+          showScannedData(decodedText);
+          startCooldown();
         }
-      }).catch(err => console.error("Camera error:", err));
+      },
+      (errorMessage) => {}
+    );
+
+    // Button functionalities
+    document.getElementById("viewLogs").addEventListener("click", () => {
+      window.location.href = "attendance.html";
     });
 
-    // View Logs
-    document.getElementById('viewLogs').addEventListener('click', () => {
-      const logs = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
-      if (logs.length === 0) {
-        alert("No attendance logs found.");
-        return;
-      }
-      let logText = logs.map(l => `${l.name} - ${l.date} - ${l.time}`).join('\n');
-      alert("Attendance Logs:\n\n" + logText);
+    document.getElementById("downloadLogs").addEventListener("click", () => {
+      alert("Download Logs feature coming soon!");
     });
 
-    // Download Logs
-    document.getElementById('downloadLogs').addEventListener('click', () => {
-      const logs = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
-      if (logs.length === 0) {
-        alert("No logs to download.");
-        return;
+    document.getElementById("clearLogs").addEventListener("click", () => {
+      if (confirm("Are you sure you want to clear all logs?")) {
+        localStorage.clear();
+        alert("Logs cleared!");
       }
-      let csv = "Name,Date,Time\n" + logs.map(l => `${l.name},${l.date},${l.time}`).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "attendance_logs.csv";
-      link.click();
     });
   </script>
-
 </body>
 </html>
