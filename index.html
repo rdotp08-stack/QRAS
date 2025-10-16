@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GALAXIA Attendance Scanner</title>
+
+<!-- html5-qrcode library -->
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <style>
   body {
     font-family: "Segoe UI", sans-serif;
@@ -29,33 +33,11 @@
     flex-wrap: wrap;
   }
 
-  /* Square camera preview */
-  #preview {
-    position: relative;
+  #reader {
     width: 480px;
     height: 480px;
-    overflow: hidden;
-    border-radius: 16px;
     border: 2px solid #0d47a1;
-    background-color: #000;
-  }
-
-  #preview video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scaleX(-1); /* fix mirrored camera */
-  }
-
-  .scan-area {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 70%;
-    height: 70%;
-    border: 3px solid #00c853;
-    border-radius: 8px;
-    transform: translate(-50%, -50%);
+    border-radius: 16px;
   }
 
   .info-box {
@@ -99,7 +81,6 @@
     background-color: #1565c0;
   }
 
-  /* Simple alert box style */
   #alertBox {
     display: none;
     background: #00c853;
@@ -111,15 +92,12 @@
   }
 </style>
 </head>
-<body>
 
+<body>
 <h1>GALAXIA Attendance Scanner</h1>
 
 <div class="container">
-  <div id="preview">
-    <video id="cameraFeed" autoplay playsinline></video>
-    <div class="scan-area"></div>
-  </div>
+  <div id="reader"></div>
 
   <div class="info-box">
     <h2>Last Scan</h2>
@@ -137,61 +115,78 @@
 
 <div id="alertBox">Attendance Recorded</div>
 
-<!-- Instascan Library -->
-<script src="https://rawcdn.githack.com/schmich/instascan-builds/master/instascan.min.js"></script>
 <script>
-  let scanner;
+  let html5QrCode;
   let cameras = [];
   let currentCameraIndex = 0;
 
-  function startScanner(camera) {
-    if (scanner) scanner.stop();
-    scanner = new Instascan.Scanner({
-      video: document.getElementById('cameraFeed'),
-      mirror: false // Force NO MIRROR on all cameras
-    });
+  const alertBox = document.getElementById('alertBox');
 
-    scanner.addListener('scan', function (content) {
-      const name = content.trim();
-      const now = new Date();
-      const date = now.toLocaleDateString();
-      const time = now.toLocaleTimeString();
-
-      document.getElementById('name').textContent = name;
-      document.getElementById('date').textContent = date;
-      document.getElementById('time').textContent = time;
-
-      const record = { name, date, time };
-      let attendance = JSON.parse(localStorage.getItem('attendance')) || [];
-      attendance.push(record);
-      localStorage.setItem('attendance', JSON.stringify(attendance));
-
-      const alertBox = document.getElementById('alertBox');
-      alertBox.style.display = 'block';
-      setTimeout(() => alertBox.style.display = 'none', 1500);
-
-      const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-      audio.play();
-    });
-
-    scanner.start(camera).catch(console.error);
+  function showAlert() {
+    alertBox.style.display = 'block';
+    setTimeout(() => alertBox.style.display = 'none', 1500);
   }
 
-  Instascan.Camera.getCameras().then(function (cams) {
-    cameras = cams;
-    if (cameras.length > 0) {
-      startScanner(cameras[currentCameraIndex]);
+  function saveAttendance(name) {
+    const now = new Date();
+    const date = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
+
+    document.getElementById('name').textContent = name;
+    document.getElementById('date').textContent = date;
+    document.getElementById('time').textContent = time;
+
+    const record = { name, date, time };
+    const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+    attendance.push(record);
+    localStorage.setItem('attendance', JSON.stringify(attendance));
+
+    showAlert();
+    const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+    audio.play();
+  }
+
+  function startScanner(cameraId) {
+    if (html5QrCode) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        initScanner(cameraId);
+      });
     } else {
-      alert('No cameras found.');
+      initScanner(cameraId);
     }
-  }).catch(console.error);
+  }
+
+  function initScanner(cameraId) {
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      cameraId,
+      {
+        fps: 10,
+        qrbox: { width: 350, height: 350 },
+      },
+      qrCodeMessage => saveAttendance(qrCodeMessage),
+      errorMessage => { /* ignore scanning errors */ }
+    ).catch(err => {
+      alert("Camera start failed: " + err);
+    });
+  }
+
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      cameras = devices;
+      startScanner(cameras[currentCameraIndex].id);
+    } else {
+      alert("No cameras found.");
+    }
+  }).catch(err => alert("Error getting cameras: " + err));
 
   document.getElementById('switchCamera').onclick = () => {
     if (cameras.length > 1) {
       currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-      startScanner(cameras[currentCameraIndex]);
+      startScanner(cameras[currentCameraIndex].id);
     } else {
-      alert('Only one camera detected.');
+      alert("Only one camera available.");
     }
   };
 
@@ -199,9 +194,7 @@
     const records = JSON.parse(localStorage.getItem('attendance')) || [];
     if (records.length === 0) return alert("No attendance records yet.");
     let message = "Attendance Records:\n\n";
-    records.forEach(r => {
-      message += `${r.name} | ${r.date} | ${r.time}\n`;
-    });
+    records.forEach(r => message += `${r.name} | ${r.date} | ${r.time}\n`);
     alert(message);
   };
 
