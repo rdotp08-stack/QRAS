@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Records</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h2>Attendance Records</h2>
+  <table id="attendanceTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Date</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button id="clearBtn">Clear Records</button>
+  <a href="index.html" class="btn-link">Back to Scanner</a>
+
+  <script>
+    const tableBody = document.querySelector("#attendanceTable tbody");
+    const clearBtn = document.getElementById("clearBtn");
+
+    function loadAttendance() {
+      const records = JSON.parse(localStorage.getItem("attendance")) || [];
+      tableBody.innerHTML = "";
+      records.forEach(r => {
+        const row = `<tr><td>${r.name}</td><td>${r.date}</td><td>${r.time}</td></tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    clearBtn.addEventListener("click", () => {
+      if (confirm("Clear all attendance records?")) {
+        localStorage.removeItem("attendance");
+        loadAttendance();
+      }
+    });
+
+    loadAttendance();
+  </script>
+</body>
+</html>
