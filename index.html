@@ -148,7 +148,7 @@
     if (scanner) scanner.stop();
     scanner = new Instascan.Scanner({
       video: document.getElementById('cameraFeed'),
-      mirror: camera.name.toLowerCase().includes('front')
+      mirror: false // Force NO MIRROR on all cameras
     });
 
     scanner.addListener('scan', function (content) {
