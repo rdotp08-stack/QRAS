@@ -18,7 +18,7 @@ scanner.addListener('scan', function (content) {
   document.getElementById('beep').play();
   showNotification("Attendance Recorded Successfully");
 
-  // update display with fade
+  // fade effect for update
   infoBox.classList.add('fade');
   setTimeout(() => {
     document.getElementById('scannedName').textContent = record.name;
@@ -36,7 +36,7 @@ Instascan.Camera.getCameras().then(function (cams) {
   } else {
     alert('No cameras found.');
   }
-});
+}).catch(e => console.error(e));
 
 document.getElementById('switchCamera').addEventListener('click', () => {
   if (cameras.length > 1) {
@@ -45,6 +45,26 @@ document.getElementById('switchCamera').addEventListener('click', () => {
   } else {
     alert('Only one camera detected.');
   }
+});
+
+// Download logs
+document.getElementById('downloadLogs').addEventListener('click', () => {
+  const records = JSON.parse(localStorage.getItem('attendance')) || [];
+  if (records.length === 0) {
+    alert("No attendance data found.");
+    return;
+  }
+
+  let csv = "Name,Date,Time\n";
+  records.forEach(r => {
+    csv += `${r.name},${r.date},${r.time}\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "attendance_logs.csv";
+  link.click();
 });
 
 function showNotification(msg) {
