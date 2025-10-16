@@ -140,39 +140,47 @@
 <!-- Instascan Library -->
 <script src="https://rawcdn.githack.com/schmich/instascan-builds/master/instascan.min.js"></script>
 <script>
-  let scanner = new Instascan.Scanner({ video: document.getElementById('cameraFeed'), mirror: false });
-  let currentCameraIndex = 0;
+  let scanner;
   let cameras = [];
+  let currentCameraIndex = 0;
 
-  scanner.addListener('scan', function (content) {
-    const name = content.trim();
-    const now = new Date();
-    const date = now.toLocaleDateString();
-    const time = now.toLocaleTimeString();
+  function startScanner(camera) {
+    if (scanner) scanner.stop();
+    scanner = new Instascan.Scanner({
+      video: document.getElementById('cameraFeed'),
+      mirror: camera.name.toLowerCase().includes('front')
+    });
 
-    document.getElementById('name').textContent = name;
-    document.getElementById('date').textContent = date;
-    document.getElementById('time').textContent = time;
+    scanner.addListener('scan', function (content) {
+      const name = content.trim();
+      const now = new Date();
+      const date = now.toLocaleDateString();
+      const time = now.toLocaleTimeString();
 
-    const record = { name, date, time };
-    let attendance = JSON.parse(localStorage.getItem('attendance')) || [];
-    attendance.push(record);
-    localStorage.setItem('attendance', JSON.stringify(attendance));
+      document.getElementById('name').textContent = name;
+      document.getElementById('date').textContent = date;
+      document.getElementById('time').textContent = time;
 
-    // Show alert
-    const alertBox = document.getElementById('alertBox');
-    alertBox.style.display = 'block';
-    setTimeout(() => alertBox.style.display = 'none', 1500);
+      const record = { name, date, time };
+      let attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+      attendance.push(record);
+      localStorage.setItem('attendance', JSON.stringify(attendance));
 
-    // Optional Google Sound (Ping)
-    const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-    audio.play();
-  });
+      const alertBox = document.getElementById('alertBox');
+      alertBox.style.display = 'block';
+      setTimeout(() => alertBox.style.display = 'none', 1500);
+
+      const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+      audio.play();
+    });
+
+    scanner.start(camera).catch(console.error);
+  }
 
   Instascan.Camera.getCameras().then(function (cams) {
     cameras = cams;
     if (cameras.length > 0) {
-      scanner.start(cameras[currentCameraIndex]);
+      startScanner(cameras[currentCameraIndex]);
     } else {
       alert('No cameras found.');
     }
@@ -181,7 +189,7 @@
   document.getElementById('switchCamera').onclick = () => {
     if (cameras.length > 1) {
       currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-      scanner.start(cameras[currentCameraIndex]);
+      startScanner(cameras[currentCameraIndex]);
     } else {
       alert('Only one camera detected.');
     }
