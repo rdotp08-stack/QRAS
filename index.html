@@ -1,49 +1,213 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GALAXIA QR Attendance</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GALAXIA Attendance Scanner</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background-color: #ffffff;
+    color: #0d47a1;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    color: #0d47a1;
+    margin-bottom: 10px;
+  }
+
+  .container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+
+  /* Square camera preview */
+  #preview {
+    position: relative;
+    width: 480px;
+    height: 480px;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 2px solid #0d47a1;
+    background-color: #000;
+  }
+
+  #preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* fix mirrored camera */
+  }
+
+  .scan-area {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    height: 70%;
+    border: 3px solid #00c853;
+    border-radius: 8px;
+    transform: translate(-50%, -50%);
+  }
+
+  .info-box {
+    border: 2px solid #0d47a1;
+    border-radius: 10px;
+    background: #f5faff;
+    padding: 20px;
+    width: 300px;
+  }
+
+  .info-box h2 {
+    margin-top: 0;
+    color: #0d47a1;
+    font-size: 20px;
+  }
+
+  .info-box p {
+    font-size: 18px;
+    margin: 8px 0;
+  }
+
+  .buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+  }
+
+  button {
+    background-color: #0d47a1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  button:hover {
+    background-color: #1565c0;
+  }
+
+  /* Simple alert box style */
+  #alertBox {
+    display: none;
+    background: #00c853;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-size: 16px;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>GALAXIA Attendance Scanner</h1>
-  </header>
 
-  <main class="main-container">
-    <!-- LEFT: Scanner area -->
-    <section class="scanner-area" id="scannerArea">
-      <div class="video-wrap">
-        <video id="preview" playsinline muted></video>
-        <div class="scan-box" aria-hidden="true"></div>
-      </div>
+<h1>GALAXIA Attendance Scanner</h1>
 
-      <div class="controls">
-        <button id="switchCamera" type="button">Switch Camera</button>
-        <a class="btn-link" href="attendance.html">View Attendance</a>
-        <button id="downloadLogs" type="button">Download Logs</button>
-      </div>
-    </section>
+<div class="container">
+  <div id="preview">
+    <video id="cameraFeed" autoplay playsinline></video>
+    <div class="scan-area"></div>
+  </div>
 
-    <!-- RIGHT: Info display -->
-    <aside class="info-display" id="infoBox">
-      <h2>Last Scan</h2>
-      <div class="info-large">
-        <div class="row"><span class="label">Name</span><span id="scannedName" class="value">—</span></div>
-        <div class="row"><span class="label">Date</span><span id="scannedDate" class="value">—</span></div>
-        <div class="row"><span class="label">Time</span><span id="scannedTime" class="value">—</span></div>
-      </div>
-    </aside>
-  </main>
+  <div class="info-box">
+    <h2>Last Scan</h2>
+    <p><strong>Name:</strong> <span id="name">—</span></p>
+    <p><strong>Date:</strong> <span id="date">—</span></p>
+    <p><strong>Time:</strong> <span id="time">—</span></p>
+  </div>
+</div>
 
-  <div id="notification" role="status" aria-live="polite"></div>
+<div class="buttons">
+  <button id="switchCamera">Switch Camera</button>
+  <button id="viewAttendance">View Attendance</button>
+  <button id="downloadLogs">Download Logs</button>
+</div>
 
-  <!-- sound (Google) -->
-  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+<div id="alertBox">Attendance Recorded</div>
 
-  <!-- Instascan (CDN fallback) -->
-  <script src="https://rawcdn.githack.com/schmich/instascan-builds/master/instascan.min.js"></script>
-  <script src="script.js"></script>
+<!-- Instascan Library -->
+<script src="https://rawcdn.githack.com/schmich/instascan-builds/master/instascan.min.js"></script>
+<script>
+  let scanner = new Instascan.Scanner({ video: document.getElementById('cameraFeed'), mirror: false });
+  let currentCameraIndex = 0;
+  let cameras = [];
+
+  scanner.addListener('scan', function (content) {
+    const name = content.trim();
+    const now = new Date();
+    const date = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
+
+    document.getElementById('name').textContent = name;
+    document.getElementById('date').textContent = date;
+    document.getElementById('time').textContent = time;
+
+    const record = { name, date, time };
+    let attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+    attendance.push(record);
+    localStorage.setItem('attendance', JSON.stringify(attendance));
+
+    // Show alert
+    const alertBox = document.getElementById('alertBox');
+    alertBox.style.display = 'block';
+    setTimeout(() => alertBox.style.display = 'none', 1500);
+
+    // Optional Google Sound (Ping)
+    const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+    audio.play();
+  });
+
+  Instascan.Camera.getCameras().then(function (cams) {
+    cameras = cams;
+    if (cameras.length > 0) {
+      scanner.start(cameras[currentCameraIndex]);
+    } else {
+      alert('No cameras found.');
+    }
+  }).catch(console.error);
+
+  document.getElementById('switchCamera').onclick = () => {
+    if (cameras.length > 1) {
+      currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+      scanner.start(cameras[currentCameraIndex]);
+    } else {
+      alert('Only one camera detected.');
+    }
+  };
+
+  document.getElementById('viewAttendance').onclick = () => {
+    const records = JSON.parse(localStorage.getItem('attendance')) || [];
+    if (records.length === 0) return alert("No attendance records yet.");
+    let message = "Attendance Records:\n\n";
+    records.forEach(r => {
+      message += `${r.name} | ${r.date} | ${r.time}\n`;
+    });
+    alert(message);
+  };
+
+  document.getElementById('downloadLogs').onclick = () => {
+    const records = JSON.parse(localStorage.getItem('attendance')) || [];
+    if (records.length === 0) return alert("No logs to download.");
+    let csv = "Name,Date,Time\n";
+    records.forEach(r => csv += `${r.name},${r.date},${r.time}\n`);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "attendance_logs.csv";
+    link.click();
+  };
+</script>
 </body>
 </html>
