@@ -8,17 +8,24 @@ scanner.addListener('scan', function (content) {
   const time = now.toLocaleTimeString();
   const record = { name: content, date, time };
 
+  // save record
   let records = JSON.parse(localStorage.getItem('attendance')) || [];
   records.push(record);
   localStorage.setItem('attendance', JSON.stringify(records));
 
+  // beep sound
+  document.getElementById('beep').play();
+
+  // notification
   showNotification("Attendance Recorded Successfully");
 });
 
 Instascan.Camera.getCameras().then(function (cams) {
   cameras = cams;
   if (cameras.length > 0) {
-    scanner.start(cameras[0]);
+    // Prefer back camera if available
+    let backCam = cameras.find(c => c.name.toLowerCase().includes('back')) || cameras[0];
+    scanner.start(backCam);
   } else {
     alert('No cameras found.');
   }
