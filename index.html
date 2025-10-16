@@ -38,6 +38,7 @@
     height: 480px;
     border: 2px solid #0d47a1;
     border-radius: 16px;
+    overflow: hidden;
   }
 
   .info-box {
@@ -64,6 +65,7 @@
     display: flex;
     gap: 15px;
     justify-content: center;
+    flex-wrap: wrap;
   }
 
   button {
@@ -111,6 +113,7 @@
   <button id="switchCamera">Switch Camera</button>
   <button id="viewAttendance">View Attendance</button>
   <button id="downloadLogs">Download Logs</button>
+  <button id="clearLogs">Clear Logs</button>
 </div>
 
 <div id="alertBox">Attendance Recorded</div>
@@ -120,7 +123,7 @@
   let cameras = [];
   let currentCameraIndex = 0;
   let lastScanTime = 0;
-  const cooldown = 5000; // 5 seconds
+
   const alertBox = document.getElementById('alertBox');
 
   function showAlert() {
@@ -129,13 +132,13 @@
   }
 
   function saveAttendance(name) {
-    const now = Date.now();
-    if (now - lastScanTime < cooldown) return;
-    lastScanTime = now;
+    const now = new Date();
+    const currentTime = now.getTime();
+    if (currentTime - lastScanTime < 5000) return; // 5-second cooldown
+    lastScanTime = currentTime;
 
-    const current = new Date();
-    const date = current.toLocaleDateString();
-    const time = current.toLocaleTimeString();
+    const date = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
 
     document.getElementById('name').textContent = name;
     document.getElementById('date').textContent = date;
@@ -147,7 +150,7 @@
     localStorage.setItem('attendance', JSON.stringify(attendance));
 
     showAlert();
-    const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+    const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
     audio.play();
   }
 
@@ -156,7 +159,7 @@
       html5QrCode.stop().then(() => {
         html5QrCode.clear();
         initScanner(cameraId);
-      });
+      }).catch(err => console.error("Stop failed:", err));
     } else {
       initScanner(cameraId);
     }
@@ -166,12 +169,9 @@
     html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
       cameraId,
-      {
-        fps: 10,
-        qrbox: { width: 350, height: 350 },
-      },
+      { fps: 10, qrbox: { width: 350, height: 350 } },
       qrCodeMessage => saveAttendance(qrCodeMessage),
-      () => {}
+      errorMessage => {}
     ).catch(err => alert("Camera start failed: " + err));
   }
 
@@ -211,6 +211,13 @@
     link.href = URL.createObjectURL(blob);
     link.download = "attendance_logs.csv";
     link.click();
+  };
+
+  document.getElementById('clearLogs').onclick = () => {
+    if (confirm("Clear all attendance records?")) {
+      localStorage.removeItem('attendance');
+      alert("All attendance logs cleared.");
+    }
   };
 </script>
 </body>
