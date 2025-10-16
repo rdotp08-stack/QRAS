@@ -8,7 +8,11 @@
 </head>
 <body>
   <h2>GALAXIA Attendance Scanner</h2>
-  <video id="preview" playsinline></video>
+
+  <div class="scanner-area">
+    <video id="preview" playsinline></video>
+    <div class="scan-box"></div>
+  </div>
 
   <div class="buttons">
     <button id="switchCamera">Switch Camera</button>
@@ -17,7 +21,10 @@
 
   <div id="notification"></div>
 
-  <script src="https://raw.githack.com/schmich/instascan-builds/master/instascan.min.js"></script>
+  <!-- beep sound -->
+  <audio id="beep" src="beep.mp3" preload="auto"></audio>
+
+  <script src="instascan.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
