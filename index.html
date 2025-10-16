@@ -130,8 +130,6 @@
     const timeDisplay = document.getElementById('time');
     const notif = document.getElementById('notification');
 
-    let lastScanTime = 0; // Track last scan timestamp
-
     function showNotification() {
       notif.style.display = 'block';
       setTimeout(() => notif.style.display = 'none', 2500);
@@ -170,14 +168,7 @@
             camera.id,
             { fps: 10, qrbox: { width: 300, height: 300 } },
             qrMessage => {
-              const now = Date.now();
-              if (now - lastScanTime > 5000) { // 5 second cooldown
-                lastScanTime = now;
-                saveAttendance(qrMessage);
-              }
-            },
-            error => {
-              // ignore scan errors
+              saveAttendance(qrMessage);
             }
           );
         }
