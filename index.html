@@ -1,43 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>GALAXIA QR Attendance</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h2>GALAXIA Attendance Scanner</h2>
+  <header>
+    <h1>GALAXIA Attendance Scanner</h1>
+  </header>
 
-  <div class="main-container">
-    <!-- Left: Scanner -->
-    <div class="scanner-area">
-      <video id="preview" playsinline></video>
-      <div class="scan-box"></div>
-      <div class="buttons">
-        <button id="switchCamera">Switch Camera</button>
-        <a href="attendance.html" class="btn-link">View Attendance</a>
-        <button id="downloadLogs">Download Logs</button>
+  <main class="main-container">
+    <!-- LEFT: Scanner area -->
+    <section class="scanner-area" id="scannerArea">
+      <div class="video-wrap">
+        <video id="preview" playsinline muted></video>
+        <div class="scan-box" aria-hidden="true"></div>
       </div>
-    </div>
 
-    <!-- Right: Info -->
-    <div class="info-display" id="infoBox">
-      <h3>Last Scan</h3>
-      <div class="info-box">
-        <p><strong>Name:</strong> <span id="scannedName">—</span></p>
-        <p><strong>Date:</strong> <span id="scannedDate">—</span></p>
-        <p><strong>Time:</strong> <span id="scannedTime">—</span></p>
+      <div class="controls">
+        <button id="switchCamera" type="button">Switch Camera</button>
+        <a class="btn-link" href="attendance.html">View Attendance</a>
+        <button id="downloadLogs" type="button">Download Logs</button>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <div id="notification"></div>
+    <!-- RIGHT: Info display -->
+    <aside class="info-display" id="infoBox">
+      <h2>Last Scan</h2>
+      <div class="info-large">
+        <div class="row"><span class="label">Name</span><span id="scannedName" class="value">—</span></div>
+        <div class="row"><span class="label">Date</span><span id="scannedDate" class="value">—</span></div>
+        <div class="row"><span class="label">Time</span><span id="scannedTime" class="value">—</span></div>
+      </div>
+    </aside>
+  </main>
 
-  <!-- Google Beep -->
+  <div id="notification" role="status" aria-live="polite"></div>
+
+  <!-- sound (Google) -->
   <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
-  <!-- Instascan CDN -->
+  <!-- Instascan (CDN fallback) -->
   <script src="https://rawcdn.githack.com/schmich/instascan-builds/master/instascan.min.js"></script>
   <script src="script.js"></script>
 </body>
