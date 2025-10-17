@@ -196,7 +196,7 @@
     // Start cooldown timer
     function startCooldown() {
       isCooldown = true;
-      cooldownTime = 3;
+      cooldownTime = 1;
       cooldownDisplay.textContent = `Cooldown: ${cooldownTime}s`;
       const cooldownInterval = setInterval(() => {
         cooldownTime--;
