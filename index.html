@@ -250,7 +250,7 @@
       const html5QrCode = new Html5Qrcode("reader");
       Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length) {
-          const camera = devices.find(cam => cam.label.toLowerCase().includes("back")) || devices[0];
+          const camera = devices.find(cam => cam.label.toLowerCase().includes("front")) || devices[0];
           html5QrCode.start(
             camera.id,
             { fps: 10, qrbox: { width: 300, height: 300 } },
